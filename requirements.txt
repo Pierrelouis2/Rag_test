@@ -1,0 +1,4 @@
+langchain[llms]
+python-dotenv==0.15.0
+openai
+langchain-openai
