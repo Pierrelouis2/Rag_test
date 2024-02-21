@@ -69,4 +69,4 @@ if __name__ == "__main__":
         chat_model =  Ollama(model="mixtral")
         chatGpt(chat_model)
 
-print("end")
+    print("end")
