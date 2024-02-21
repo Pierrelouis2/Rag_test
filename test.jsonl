@@ -1,0 +1,2 @@
+{"prompt":"Retrieve the total sales from the \"invoices\" table.","response":"SELECT SUM(Total) AS TotalSales FROM invoices;"}
+{"prompt":"List the names and countries of all customers.","response":"SELECT FirstName, LastName, Country FROM customers;"}

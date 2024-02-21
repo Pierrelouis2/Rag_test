@@ -1,0 +1,17 @@
+{"prompt":"Retrieve all data from the \"albums\" table.","response":"SELECT * FROM albums;"}
+{"prompt":"List the names and email addresses of all customers.","response":"SELECT FirstName, LastName, Email FROM customers;"}
+{"prompt":"Retrieve the names of all media types.","response":"SELECT Name FROM media_types;"}
+{"prompt":"List all unique names from the \"artists\" table.","response":"SELECT DISTINCT Name FROM artists;"}
+{"prompt":"Get the names of all playlists.","response":"SELECT Name FROM playlists;"}
+{"prompt":"Find the total duration of all tracks.","response":"SELECT SUM(Milliseconds) AS TotalDuration FROM tracks;"}
+{"prompt":"Get the total number of customers.","response":"SELECT COUNT(CustomerId) AS TotalCustomers FROM customers;"}
+{"prompt":"Find the total price of all invoice items.","response":"SELECT SUM(UnitPrice * Quantity) AS TotalPrice FROM invoice_items;"}
+{"prompt":"Retrieve the names of all artists and their corresponding album counts.","response":"SELECT artists.Name AS ArtistName, COUNT(albums.AlbumId) AS AlbumCount FROM artists LEFT JOIN albums ON artists.ArtistId = albums.ArtistId GROUP BY artists.ArtistId;"}
+{"prompt":"Get the names of all playlists along with the number of tracks in each.","response":"SELECT playlists.Name AS PlaylistName, COUNT(playlist_track.TrackId) AS TrackCount FROM playlists LEFT JOIN playlist_track ON playlists.PlaylistId = playlist_track.PlaylistId GROUP BY playlists.PlaylistId;"}
+{"prompt":"Retrieve the first and last names of all employees.","response":"SELECT FirstName, LastName FROM employees;"}
+{"prompt":"Retrieve the track names and their respective album titles.","response":"SELECT tracks.Name AS TrackName, albums.Title AS AlbumTitle FROM tracks INNER JOIN albums ON tracks.AlbumId = albums.AlbumId;"}
+{"prompt":"Retrieve the names of all tracks with their respective genres.","response":"SELECT tracks.Name AS TrackName, genres.Name AS GenreName FROM tracks INNER JOIN genres ON tracks.GenreId = genres.GenreId;"}
+{"prompt":"Find the titles of all albums along with their corresponding artist names.","response":"SELECT albums.Title, artists.Name AS ArtistName FROM albums INNER JOIN artists ON albums.ArtistId = artists.ArtistId;"}
+{"prompt":"Get the first and last names of all employees along with their titles.","response":"SELECT FirstName, LastName, Title FROM employees;"}
+{"prompt":"Find the genres with their respective names from the \"genres\" table.","response":"SELECT GenreId, Name FROM genres;"}
+{"prompt":"List the titles and artists of all tracks.","response":"SELECT tracks.Name AS TrackTitle, artists.Name AS ArtistName FROM tracks INNER JOIN albums ON tracks.AlbumId = albums.AlbumId INNER JOIN artists ON albums.ArtistId = artists.ArtistId;"}
