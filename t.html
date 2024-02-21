@@ -1,0 +1,496 @@
+<html lang=en><head>
+        <meta charset=utf-8>
+        <meta name=viewport content="width=device-width, initial-scale=1.0">
+        <meta http-equiv=X-UA-Compatible content="ie=edge">
+        <title>I Built a Technical Analysis AI Guru from Scratch | by Michael Samon | in AI Advances - Freedium</title>
+        
+        <meta name=description content="Lessons learned finetuning Mistral-7B on over 3500 pages of trading commentary">
+        <meta name=keywords content="medium, paywall, medium.com, paywall breakthrough">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.tailwindcss.com?plugins=forms,typography,aspect-ratio"></script>
+        <link href="https://glyph.medium.com/css/unbound.css" rel=stylesheet>
+        <link rel=apple-touch-icon sizes=180x180 href="/apple-touch-icon.png">
+        <link rel=icon type="image/png" sizes=32x32 href="/favicon-32x32.png">
+        <link rel=icon type="image/png" sizes=16x16 href="/favicon-16x16.png">
+        <link rel=manifest href="/site.webmanifest">
+        <link rel=mask-icon href="/safari-pinned-tab.svg" color=#00aba9>
+        <meta name=msapplication-TileColor content=#00aba9>
+        <meta name=theme-color content=#ffffff>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+        <link rel=stylesheet href="https://unpkg.com/@highlightjs/cdn-assets@11.8.0/styles/atom-one-dark.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@17.8.4/dist/lazyload.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/lightense-images@1.0.17/dist/lightense.min.js"></script>
+        <script>
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  document.documentElement.classList.add('dark');
+  //document.getElementById('darkIcon').classList.remove('hidden');
+  //document.getElementById('lightIcon').classList.add('hidden')
+} else {
+  document.documentElement.classList.remove('dark')
+  //document.getElementById('lightIcon').classList.remove('hidden');
+  //document.getElementById('darkIcon').classList.add('hidden');
+}
+        </script>
+        <style>
+        .shadow-lf {
+            box-shadow: inset 3px 0 0 0 rgb(209 207 239 / var(--tw-bg-opacity));
+        }   
+        </style>
+        <style>
+    .notification-container {
+      display: none;
+      position: fixed;
+      top: 20px;
+      padding: 2%;
+      z-index: 1000;
+    }
+
+    .notification-card {
+      background-color: #fff;
+      border: 1px solid #ccc;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      padding: 10px 20px;
+      border-radius: 5px;
+      text-align: center;
+    }
+        </style>
+        <script>
+    window._resizeIframe = function (iframeData)
+    {
+            iframeData.iframe.height = iframeData.height
+            _resizeIframeWidth()
+    }
+
+    function _resizeIframeWidth(){ var element = document.querySelector(".main-content");
+    var width = element.offsetWidth;
+
+    iframes = document.getElementsByTagName("iframe");
+    for (var i = 0; i < iframes.length; i++) {
+            iframes[i].width = width
+    }
+
+    window.onresize = _resizeIframeWidth
+ }
+        </script>
+        <!--
+        <script>
+                window.onload = function() {
+    window.parent.postMessage({
+        type: "URL_UPDATE",
+        url: window.location.href
+    }, "*");
+}
+                </script>
+                -->
+    </head>
+    <body class="dark:bg-gray-800 bg-white"><div class="fixed bottom-4 left-4" style="z-index: 999999;">
+        <button id=openProblemModal class="m-1.5 flex items-center bg-red-500 text-white py-2 px-4 rounded-full shadow-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <svg xmlns="http://www.w3.org/2000/svg" height=1em viewBox="0 0 512 512">
+                <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. --><style>svg{fill:#ffffff}</style>
+                <path d="M256 32c14.2 0 27.3 7.5 34.5 19.8l216 368c7.3 12.4 7.3 27.7 .2 40.1S486.3 480 472 480H40c-14.3 0-27.6-7.7-34.7-20.1s-7-27.8 .2-40.1l216-368C228.7 39.5 241.8 32 256 32zm0 128c-13.3 0-24 10.7-24 24V296c0 13.3 10.7 24 24 24s24-10.7 24-24V184c0-13.3-10.7-24-24-24zm32 224a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"></path>
+            </svg>
+        </button>
+        <button id=darkModeToggle class="m-1.5 flex items-center bg-blue-500 text-white py-2 px-4 rounded-full shadow-lg hover:bg-blue-600 focus:outline-none">
+            <svg id=darkIcon xmlns="http://www.w3.org/2000/svg" height=1em viewBox="0 0 384 512">
+                <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+                <path d="M223.5 32C100 32 0 132.3 0 256S100 480 223.5 480c60.6 0 115.5-24.2 155.8-63.4c5-4.9 6.3-12.5 3.1-18.7s-10.1-9.7-17-8.5c-9.8 1.7-19.8 2.6-30.1 2.6c-96.9 0-175.5-78.8-175.5-176c0-65.8 36-123.1 89.3-153.3c6.1-3.5 9.2-10.5 7.7-17.3s-7.3-11.9-14.3-12.5c-6.3-.5-12.6-.8-19-.8z"></path>
+            </svg>
+            <!-- SVG icon for light mode (e.g., a sun) -->
+            <svg class=hidden id=lightIcon xmlns="http://www.w3.org/2000/svg" height=1em viewBox="0 0 512 512">
+                <!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2023 Fonticons, Inc. -->
+                <path d="M361.5 1.2c5 2.1 8.6 6.6 9.6 11.9L391 121l107.9 19.8c5.3 1 9.8 4.6 11.9 9.6s1.5 10.7-1.6 15.2L446.9 256l62.3 90.3c3.1 4.5 3.7 10.2 1.6 15.2s-6.6 8.6-11.9 9.6L391 391 371.1 498.9c-1 5.3-4.6 9.8-9.6 11.9s-10.7 1.5-15.2-1.6L256 446.9l-90.3 62.3c-4.5 3.1-10.2 3.7-15.2 1.6s-8.6-6.6-9.6-11.9L121 391 13.1 371.1c-5.3-1-9.8-4.6-11.9-9.6s-1.5-10.7 1.6-15.2L65.1 256 2.8 165.7c-3.1-4.5-3.7-10.2-1.6-15.2s6.6-8.6 11.9-9.6L121 121 140.9 13.1c1-5.3 4.6-9.8 9.6-11.9s10.7-1.5 15.2 1.6L256 65.1 346.3 2.8c4.5-3.1 10.2-3.7 15.2-1.6zM160 256a96 96 0 1 1 192 0 96 96 0 1 1 -192 0zm224 0a128 128 0 1 0 -256 0 128 128 0 1 0 256 0z"></path>
+            </svg>
+        </button>
+    </div>
+    <nav id=header class="fixed w-full z-9 top-0 dark:bg-gray-800 dark:text-white bg-white shadow" style="z-index: 999999;">
+        <div class=notification-container>
+    <div class="notification-card dark:bg-gray-800 bg-white">
+      <p class="text-2xl pb-5 text-black dark:text-white">Great news !!!</p>
+      <p class="pb-3 text-black dark:text-white">We are finally unblocked on GitHub! Check it out!<br><br></p>
+      <a href="https://patreon.com/Freedium" target=_blank title=Patreon>
+      <button class="bg-red-400 mx-1 text-white hover:bg-red-500 font-semibold py-1 px-2 rounded mt-2">
+        Patreon
+      </button>
+    </a>
+    <a href="https://www.buymeacoffee.com/zhymabekroman" target=_blank title="Buy me a coffee">
+        <button class="bg-orange-500 hover:bg-orange-700 mx-1 text-white font-semibold py-1 px-2 rounded mt-2">
+          Buy me a coffee
+        </button>
+      </a>
+
+      <button class="bg-gray-300 mx-1 hover:bg-gray-400 text-gray-800 font-semibold py-1 px-2 rounded mt-2 close-button">
+        Close
+      </button>
+      <a href="https://codeberg.org/Freedium-cfd/web" target=_blank title=Codeberg>
+      <button class="bg-blue-800 hover:bg-blue-900 mx-1 text-white font-semibold py-1 px-2 rounded mt-2">
+        Source code - Codeberg
+      </button>
+      </a>
+      <a href="https://github.com/Freedium-cfd/web" target=_blank title=GitHub></a>
+      <button class="bg-gray-700 hover:bg-gray-600 mx-1 text-white font-semibold py-1 px-2 rounded mt-2">
+        Source code - GitHub
+      </button>
+      
+    </div>
+  </div>
+
+        
+    
+        <div id=progress class="h-1 z-20 top-0" style="background:linear-gradient(to right, #4dc0b5 var(--scroll), transparent 0)"></div>
+        <div class="w-full md:max-w-4xl mx-auto flex flex-wrap items-center justify-between mt-0 py-3">
+            <div class=pl-4>
+                <a class="text-green-500 text-base no-underline hover:no-underline font-extrabold text-xl" href="/" onclick=navigateToOrigin()>Freedium</a>
+            </div>
+            <div class="block lg:hidden pr-4">
+                <button id=nav-toggle class="flex items-center px-3 py-2 border rounded text-gray-500 dark:text-white border-gray-600 hover:text-gray-900 dark:hover:text-white hover:border-green-500 appearance-none focus:outline-none">
+                    <svg class="fill-current h-3 w-3" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                        <title>Menu</title>
+                        <path d="M0 3h20v2H0V3zm0 6h20v2H0V9zm0 6h20v2H0v-2z"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="w-full flex-grow lg:flex lg:items-center lg:w-auto hidden lg:block mt-2 lg:mt-0 dark:bg-gray-800 bg-white" id=nav-content>
+                <ul class="list-reset lg:flex justify-end flex-1 items-center">
+                    <li class=mr-3>
+                        <a class="inline-block text-gray-600 dark:text-white no-underline hover:text-gray-900 dark:hover:text-white hover:text-underline py-2 px-4" href="https://codeberg.org/Freedium-cfd/web" target=_blank>Source code</a>
+                    </li>
+                    <li class=mr-3>
+                        <a class="inline-block text-gray-600 dark:text-white no-underline hover:text-gray-900 dark:hover:text-white hover:text-underline py-2 px-4" href="https://freedium-miror-saqg.vercel.app/" target=_blank>Mirror 1</a>
+                    </li>
+                    <li class=mr-3>
+                      <a class="inline-block text-gray-600 dark:text-white no-underline hover:text-gray-900 dark:hover:text-white hover:text-underline py-2 px-4" href="https://freedium-mirror.vercel.app/" target=_blank>Mirror 2</a>
+                  </li>
+                  <li class=mr-3>
+                    <a class="inline-block text-gray-600 dark:text-white no-underline hover:text-gray-900 dark:hover:text-white hover:text-underline py-2 px-4" href="https://romans-status-page.vercel.app/status/freedium" target=_blank>Status page</a>
+                </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container w-full md:max-w-3xl mx-auto pt-20 break-words text-gray-900 dark:text-gray-200 bg-white dark:bg-gray-800">
+    <div class="w-full px-4 md:px-6 text-xl text-gray-800 dark:text-gray-100 leading-normal" style=font-family:Georgia,serif;>
+        <div class=font-sans>
+            <p class="text-base md:text-sm text-green-500 font-bold pb-3">
+                <a href="https://ai.gopubby.com/i-built-a-technical-analysis-ai-guru-from-scratch-6083370101d2#bypass" class="text-sm md:text-sm text-green-500 font-bold no-underline hover:underline ">&lt; Go to the original</a>
+            </p>
+            
+                <img alt="Preview image" style="max-height: 65vh;
+                            width: auto;
+                            margin: auto" loading=eager role=presentation src="https://miro.medium.com/v2/resize:fit:700/1*wAyVQHdUDFQQjCxHoXnFgQ.png">
+            
+            <h1 class="font-bold font-sans break-normal text-gray-900 dark:text-gray-100 pt-6 pb-2 text-3xl md:text-4xl">I Built a Technical Analysis AI Guru from Scratch</h1>
+            <h2 class="font-medium font-sans break-normal text-gray-600 dark:text-gray-200 pt-1 text-1xl md:text-1xl">Lessons learned finetuning Mistral-7B on over 3500 pages of trading commentary</h2>
+        </div>
+        <div class="bg-gray-100 dark:bg-gray-600 border border-gray-300 m-2 mt-5">
+            <div class="flex items-center space-x-4 p-4">
+                <div class=flex-shrink-0>
+                    <a href="https://medium.com/@michael.samon11" target=_blank title="I talk about code, AI, and the future of tech. Want to hire me? Reach me at msamon.io" class="block relative">
+                        <img src="https://miro.medium.com/v2/resize:fill:88:88/1*qlYnh2AEdEebTfNL40Zgag.jpeg" alt="Michael Samon" class="rounded-full h-11 w-11 no-lightense">
+                        <div class="absolute bottom-0 right-0 h-3 w-3 border-2 border-white bg-green-500 rounded-full"></div>
+                    </a>
+                </div>
+                <div class=flex-grow>
+                    <a href="https://medium.com/@michael.samon11" target=_blank title="I talk about code, AI, and the future of tech. Want to hire me? Reach me at msamon.io" class="block font-semibold text-gray-900 dark:text-white">Michael Samon</a>
+                    <button class="text-sm text-white bg-green-500 px-3 py-1 rounded-lg mt-1 dark:bg-green-700">
+                        <a href="https://medium.com/@michael.samon11" target=_blank title="I talk about code, AI, and the future of tech. Want to hire me? Reach me at msamon.io" class="block text-sm text-white">Follow</a>
+                    </button>
+                </div>
+            </div>
+            <div class="px-4 pb-2">
+                <div class="flex flex-wrap items-center space-x-2 text-sm text-gray-500 dark:text-white">
+                    
+                        <a href="https://medium.com/ai-advances" title="Democratizing access to artificial intelligence" target=_blank class="flex items-center space-x-1">
+                            <img src="https://miro.medium.com/v2/resize:fill:48:48/1*R8zEd59FDf0l8Re94ImV0Q.png" alt="AI Advances" class="h-4 w-4 rounded-full no-lightense">
+                            <p>AI Advances</p>
+                        </a>
+                        <span>·</span>
+                    
+                    <span class="text-gray-500 dark:text-white">~12 min read</span>
+                    <span class=md:inline>·</span>
+                    <span class="text-gray-500 dark:text-white">February 14, 2024 (Updated: February 15, 2024)</span>
+                    <span class=md:inline>·</span>
+                    <span class="text-yellow-500 dark:text-yellow-400">Free: No</span>
+                </div>
+            </div>
+        </div>
+        <div class="main-content mt-8">
+            <h4 class="font-bold font-sans break-normal text-gray-900 dark:text-gray-100 text-l md:text-xl ">Table of Contents</h4><p class="leading-8 mt-3"><a class=text-base style="text-decoration: underline;" rel="" title=Introduction href=#5652 target=_blank>Introduction</a>
+<a class=text-base style="text-decoration: underline;" rel="" title=Method href=#73e0 target=_blank>Method</a>
+<a class=text-base style="text-decoration: underline;" rel="" title="Step 1: Gather training data" href=#3b50 target=_blank>Step 1: Gather training data</a>
+<a class=text-base style="text-decoration: underline;" rel="" title="Step 2: Clean and parse data" href=#a945 target=_blank>Step 2: Clean and parse data</a>
+<a class=text-base style="text-decoration: underline;" rel="" title="Step 3: Train the LLM" href=#3f03 target=_blank>Step 3: Train the LLM</a>
+<a class=text-base style="text-decoration: underline;" rel="" title="Step 4: Evaluate, Rinse &amp; Repeat" href=#a8a7 target=_blank>Step 4: Evaluate, Rinse &amp; Repeat</a>
+<a class=text-base style="text-decoration: underline;" rel="" title=Conclusion href=#985c target=_blank>Conclusion</a><h3 class="font-bold font-sans break-normal text-gray-900 dark:text-gray-100 text-1xl md:text-2xl pt-12">Introduction</h3><p class="leading-8 mt-3">In the swirling world of financial market analysis, where change is as unpredictable as the Mistral, I embarked on an ambitious journey to create a large language model (LLM) that was an expert in the technical analysis of stock and options trading. Drawing from what I had learned <a class=text-base style="text-decoration: underline;" rel="" title="" href="https://medium.com/ai-advances/options-trading-with-gpt-4-and-python-a-tech-financial-future-8f299462ae41" target=_blank>making GPT-4 trade options</a>, I knew the next frontier was to add more technical analysis expertise via fine-tuning. And what a frontier <a class=text-base style="text-decoration: underline;" rel="" title="" href="https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1" target=_blank>wrestling with a 7 billion (that's billion with a </a><a class=text-base style="text-decoration: underline;" rel="" title="" href="https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1" target=_blank><strong>B</strong></a><a class=text-base style="text-decoration: underline;" rel="" title="" href="https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1" target=_blank>) parameter model was.</a> The results of this rollercoaster though I am very excited to share with you all.</p>
+<div class="flex border border-gray-300 p-2 mt-7 items-center overflow-hidden"><a rel="noopener follow" href="https://ai.gopubby.com/options-trading-with-gpt-4-and-python-a-tech-financial-future-8f299462ae41" target=_blank> <div class="flex flex-row justify-between p-2 overflow-hidden"><div class="flex flex-col justify-center p-2"><h2 class="text-black dark:text-gray-100 text-base font-bold">I Made GPT-4 Trade Options</h2><div class="mt-2 block"><h3 class="text-grey-darker text-sm">Options Trading With GPT-4 Using Retrieval Augmented Generation (RAG)</h3></div><div class=mt-5 style=""><p class="text-grey-darker text-xs">gopubby.com</div></div><div class="relative flex flew-row h-40 w-72"><div class="lazy absolute inset-0 bg-cover bg-center" data-bg="https://miro.medium.com/v2/resize:fit:320/1*b01mu6fB109kxEs8wCHpkQ.png"></div></div></div> </a></div><h3 class="font-bold font-sans break-normal text-gray-900 dark:text-gray-100 text-1xl md:text-2xl pt-12">Method</h3><p class="leading-8 mt-3">A big misconception I had going into this project was that fine-tuning the model would be more difficult than data preparation. Boy, was I in for a treat…<blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>Lesson Learned: <strong>Data preparation</strong> is the most critical and oftentimes most difficult step of finetuning LLMs</blockquote><p class="leading-8 mt-7">The actual process of loading up an LLM and pointing it at a dataset was the least painful part of the whole process. Especially with wonderful libraries that come with all the bells and whistles (I used <a class=text-base style="text-decoration: underline;" rel="" title="" href="https://github.com/OpenAccess-AI-Collective/axolotl" target=_blank>axolotl</a>).<p class="leading-8 mt-7">Here are the steps I took from start to finish with my perceived difficulty levels included:<ol class="list-decimal pl-8 mt-2"><li class=mt-3>Gather training data (difficulty depends)<li class=mt-3>Clean and parse data (<strong>hard</strong>)<li class=mt-3>Finetune LLM (&gt;7B models more difficult)<li class=mt-3>Pray (optional), evaluate, rinse &amp; repeat</ol><p class="leading-8 mt-7">Let's now dig deeper into each of these steps.<h3 class="font-bold font-sans break-normal text-gray-900 dark:text-gray-100 text-1xl md:text-2xl pt-12">Step 1: Gather training data</h3><p class="leading-8 mt-3">Depending on your application, this step could be as easy as downloading via a link to the difficulty of writing a custom web scraper. In my case, I already had access to all the PDF versions of the trading commentary I wanted to fine-tune with. Here is the full list of books in the dataset. If you read all of these books, you would be a trading wizard. (Hence, why I made an LLM do it for me.)<ol class="list-decimal pl-8 mt-2"><li class=mt-3>Brian Overby — The Options Playbook, Expanded 2nd Edition<li class=mt-3>Buff Pelz Dormeier — Investing with Volume Analysis<li class=mt-3>Lawrence G. McMillan — Options as a Strategic Investment, Fourth Edition<li class=mt-3>Mark Leibovit — The Trader's Book of Volume, The Definitive Guide to Volume Trading<li class=mt-3>Laurentiu Damir — Price Action Breakdown, Exclusive Price Action Trading Approach to Financial Markets<li class=mt-3>Sheldon Natenberg — Option Volatility and Pricing<li class=mt-3>Steven Achelis — Technical Analysis from A to Z<li class=mt-3>Jesse Seal — Trading Stocks with a 9 to 5<li class=mt-3>Mark Sebastian, L. Celeste Taylor — Trading Options for Edge<li class=mt-3>Anna Couling — A Complete Guide To Volume Price Analysis</ol><p class="leading-8 mt-7">These books contain over<strong> 3500 pages </strong>of trading knowledge. To extract all the text from these PDFs, I used the Python <a class=text-base style="text-decoration: underline;" rel="" title="" href="https://github.com/pymupdf/PyMuPDF" target=_blank>PyMuPDF</a> package.<p class="leading-8 mt-7">With the plain text versions in hand, I now had a large text corpus ready for the parsing step.<h3 class="font-bold font-sans break-normal text-gray-900 dark:text-gray-100 text-1xl md:text-2xl pt-12">Step 2: Clean and parse data</h3><p class="leading-8 mt-3"><em>FYI:</em> For the sake of brevity, I discuss only the final data transformations I used to train the model. In actuality, it took me many iterations to find the right permutation. I suspect however my methodology can be replicated in other applications. That being said, what worked for me may not work for you.<p class="leading-8 mt-7">Here's what gave the best results in my case:<ol class="list-decimal pl-8 mt-2"><li class=mt-3>Paragraph chunked text with GPT-3.5 generated Q&amp;A pairs included (text completion objective)<li class=mt-3>The <a class=text-base style="text-decoration: underline;" rel="" title="" href="https://huggingface.co/datasets/teknium/openhermes" target=_blank>OpenHermes dataset </a>to improve chat capabilities post-learning from book content</ol><p class="leading-8 mt-7">I embarked first on removing irrelevant or noisy text from my book dataset. This often was the first and last 5 pages which consisted of acknowledgments, table of contents, and publisher information.<p class="leading-8 mt-7">Next, following inspiration from <a class=text-base style="text-decoration: underline;" rel="" title="" href="https://www.semanticscholar.org/paper/Improving-Domain-Adaptation-through-Extended-Text-Jiang-Huang/c1474dc03848cb26d118bc37c26636d7082c3854?utm_source=direct_link" target=_blank>this paper</a>, I used GPT-3.5 (saves $$ versus GPT-4) to generate Q&amp;A pairs from each paragraph in the text.</p>
+<div class="flex border border-gray-300 p-2 mt-7 items-center overflow-hidden"><a rel="noopener follow" href="https://www.semanticscholar.org/paper/Improving-Domain-Adaptation-through-Extended-Text-Jiang-Huang/c1474dc03848cb26d118bc37c26636d7082c3854?utm_source=direct_link" target=_blank> <div class="flex flex-row justify-between p-2 overflow-hidden"><div class="flex flex-col justify-center p-2"><h2 class="text-black dark:text-gray-100 text-base font-bold">[PDF] Improving Domain Adaptation through Extended-Text Reading Comprehension | Semantic Scholar</h2><div class="mt-2 block"><h3 class="text-grey-darker text-sm">This work improves reading comprehension via LLM and clustering to improve the efficiency of domain adaptation and…</h3></div><div class=mt-5 style=""><p class="text-grey-darker text-xs">semanticscholar.org</div></div><div class="relative flex flew-row h-40 w-72"><div class="lazy absolute inset-0 bg-cover bg-center" data-bg="https://miro.medium.com/v2/resize:fit:320/0*HPkG7fr5dc2TcvxZ"></div></div></div> </a></div><p class="leading-8 mt-7">After GPT-3.5 processing, each paragraph across all books now looked like the following:<pre class="p-4 mt-7 bg-gray-100 dark:bg-gray-900 flex flex-col justify-center"><code class="overflow-x-auto mt-1 language-json bg-gray-100 dark:bg-gray-900">{"text":"&lt;s&gt;[INST] &lt;&lt;SYS&gt;&gt;You are a trading expert. Answer questions on the following text: 
+        'An ambiguous paragraph about the RSI indicator.'&lt;&lt;/SYS&gt;&gt;
+        
+        What is the RSI?[/INST]
+        The Relative Strength Index (RSI) is a popular momentum oscillator.&lt;/s&gt;
+        
+        &lt;s&gt;[INST]
+        What does RSI measure?[/INST]
+        The Relative Strength Index (RSI) measures the magnitude and velocity 
+        of recent price movements in a particular financial instrument, 
+        typically a stock or a currency pair.
+
+        ... up to 5 more questions&lt;/s&gt;"
+}</code></pre><p class="leading-8 mt-7">Notice the text includes the special instruction tokens used by Mistral for chat generation. I then passed this dataset to the model as an unsupervised language modeling task. Here is the axolotl dataset config for those interested (full configs available in next section):<pre class="p-4 mt-7 bg-gray-100 dark:bg-gray-900 flex flex-col justify-center"><code class="overflow-x-auto mt-1 language-yaml bg-gray-100 dark:bg-gray-900">datasets:
+  - path: qa-dataset.jsonl
+    ds_type: json
+    type: completion
+val_set_size: 0.05</code></pre><p class="leading-8 mt-7">The OpenHermes dataset was essentially free lunch and only required the following axolotl config to get up and running:<pre class="p-4 mt-7 bg-gray-100 dark:bg-gray-900 flex flex-col justify-center"><code class="overflow-x-auto mt-1 language-yaml bg-gray-100 dark:bg-gray-900">datasets:
+  - path: teknium/openhermes
+    split: train
+    type: alpaca</code></pre><h3 class="font-bold font-sans break-normal text-gray-900 dark:text-gray-100 text-1xl md:text-2xl pt-12">Step 3: Train the LLM</h3><p class="leading-8 mt-3">To fully understand the complications of this section, you need to know the difference between unsupervised language modeling and instruction finetuning.<p class="leading-8 mt-7"><strong>Unsupervised language modeling</strong> — is used to train LLMs by having them predict the next word in a text based on the context provided by all previous words. This training doesn't rely on specific instruction-response pairs but on large text corpora, allowing the model to understand and generate human-like text based on the <em>many </em>patterns it learns. The <a class=text-base style="text-decoration: underline;" rel="" title="" href="https://towardsdatascience.com/transformers-explained-visually-not-just-how-but-why-they-work-so-well-d840bd61a9d3" target=_blank>transformer architecture</a> enables the model to consider the entire context of the input text, making it effective at understanding language nuances and generating coherent and contextually relevant text. An example training pair could be:<p class="leading-8 mt-7"><strong>Input</strong>: "I am an ambiguous text in a massive corpus of pre-training data. I was likely scraped from Reddit or"<p class="leading-8 mt-7"><strong>Output</strong>: "Youtube."<p class="leading-8 mt-7"><em>Millions </em>of these samples are fed to the LLM during the pre-training phase. The reason LLMs seem to know everything is that <em>they've trained on nearly everything.</em><p class="leading-8 mt-7"><strong>Instruction finetuning</strong> — is the continued training of a pre-trained model on input-output pairs of an instruction text. An example instruction pair could look like the following:<p class="leading-8 mt-7"><strong>Instruction</strong>: "Recommend a list of ingredients for a PB&amp;J sandwich."<p class="leading-8 mt-7"><strong>Output</strong>: "Sure! A traditional PB&amp;J consists of peanut butter, jelly, and toast."<p class="leading-8 mt-7">The instruction is used as input to the model. Its target output is the expected response from the model given the instruction. A lot of effort is often required to create high-quality instruction datasets. Many smaller open-source models are trained on these high-quality instruction datasets (like OpenHermes) to contend with the performance of larger models like ChatGPT.<p class="leading-8 mt-7">With this in mind, my approach and thought process was to:<ol class="list-decimal pl-8 mt-2"><li class=mt-3>Teach the LLM technical analysis with unsupervised language modeling (text completion)<li class=mt-3>Improve its "sociability" after a noticeable degradation in chat performance with instruction fine-tuning using the OpenHermes dataset (aka supervised fine-tuning)</ol><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>Lesson Learned: An instruction-tuned model can "unlearn" their sociability after further unsupervised training</blockquote><p class="leading-8 mt-7">I trained on the books dataset for only one epoch on a single A6000 (48 GB) GPU on <a class=text-base style="text-decoration: underline;" rel="" title="" href="https://www.runpod.io/" target=_blank>runpod</a>. In total, this cost me less than $5. The full training metrics and config are available here:</p>
+<div class="flex border border-gray-300 p-2 mt-7 items-center overflow-hidden"><a rel="noopener follow" href="https://api.wandb.ai/links/mjsamon/1tk6csmt" target=_blank> <div class="flex flex-row justify-between p-2 overflow-hidden"><div class="flex flex-col justify-center p-2"><h2 class="text-black dark:text-gray-100 text-base font-bold">QLoRa Mistral Trading Guru</h2><div class="mt-2 block"><h3 class="text-grey-darker text-sm">Training metrics on technical analysis books dataset</h3></div><div class=mt-5 style=""><p class="text-grey-darker text-xs">wandb.ai</div></div><div class="relative flex flew-row h-40 w-72"><div class="lazy absolute inset-0 bg-cover bg-center" data-bg="https://miro.medium.com/v2/resize:fit:320/0*B-z_JSCLmGI50fmk"></div></div></div> </a></div><p class="leading-8 mt-7">I then reloaded the resulting QLoRa model and trained again for only 100 steps (out of 100k or so) on the OpenHermes dataset. I found its chatting capabilities were greatly improved from seeing a small subset of OpenHermes.<h3 class="font-bold font-sans break-normal text-gray-900 dark:text-gray-100 text-1xl md:text-2xl pt-12">Step 4: Evaluate, Rinse &amp; Repeat</h3><p class="leading-8 mt-3">The final step in our journey (unless it's your first time here).<p class="leading-8 mt-7">I used the vanilla Mistral 7B model as a baseline to compare outputs against. A question any technical analysis guru should be able to answer is:<p class="leading-8 mt-7"><strong>"What does it mean when a narrow spread candle with above average volume forms?"</strong><p class="leading-8 mt-7">Here is what vanilla Mistral 7B had to say:<blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>When a narrow spread candle with above-average volume forms, it indicates that there was significant buying or selling pressure during the trading period. The narrow spread suggests that the opening and closing prices were close to each other, while the high and low prices were further apart. This can be an important signal for traders as it may indicate a potential trend reversal or continuation depending on its location in relation to support and resistance levels.</blockquote><p class="leading-8 mt-7">Compared to our trading guru… drumroll, please!<blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>A narrow spread candle with above average volume can indicate a few different things. It could mean that the market is experiencing a period of consolidation, where price is moving sideways and not making significant moves in either direction. The above average volume could suggest that there is a lot of activity happening within the market, but not much is changing in terms of price movement.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>It could also indicate a period of transition, where the market is moving from one trend to another. For example, if the market has been in a strong uptrend and the candle forms after a significant price increase, it could signal that the market is starting to consolidate and may be entering a sideways period before continuing the uptrend.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>In some cases, a narrow spread candle with above average volume could also indicate a period of indecision, where buyers and sellers are both present, but neither is able to gain the upper hand. This can lead to a period of sideways movement as the market tries to determine which direction to move in.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>Overall, the meaning of a narrow spread candle with above average volume will depend on the specific context and market conditions. It is always a good idea to consider other factors, such as price action and news events, when interpreting candle patterns.</blockquote><p class="leading-8 mt-7">You can see the guru gives a much more complete answer here. It mentions TA concepts like consolidation phases, indecision, transitions, and sideways periods as well as that I should consider "other factors, such as <strong>price action and news events,</strong> when interpreting candle patterns."<p class="leading-8 mt-7">Just for kicks, here is also what GPT-4 output:<blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>When a narrow spread candle with above average volume forms on a price chart, it indicates a specific market condition characterized by several key factors. Here's a breakdown of what this pattern suggests:</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>1. **Narrow Spread Candle**: A "narrow spread" candle refers to a candlestick on a chart where the difference between the opening and closing prices (the body of the candle) is small. This suggests that there was not a significant difference in price over the period the candle represents, indicating consolidation or indecision in the market.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>2. **Above Average Volume**: Volume represents the total number of shares or contracts traded during the time period the candle covers. When a narrow spread candle is accompanied by above-average volume, it signals that a significant number of shares were traded, but without a corresponding significant move in price.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>**Implications of This Pattern**:</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>- **Consolidation**: This pattern may indicate consolidation in the market, where despite a lot of trading activity, buyers and sellers are in equilibrium, and the price doesn't move much in either direction.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>- **Indecision**: It can also reflect a state of indecision among traders. The high volume suggests strong interest, but the narrow spread shows a lack of consensus on price direction.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>- **Potential Precedent for a Breakout**: Often, such a pattern could precede a breakout. Since there's a lot of interest (evidenced by the high volume) but prices are not yet moving, a breakout could occur once the market decides on a direction. This could be either upward or downward, depending on subsequent market dynamics and sentiment.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>- **Accumulation or Distribution**: In some contexts, this pattern might suggest accumulation (buyers gradually buying up shares without significantly affecting the price) or distribution (sellers gradually selling shares without causing a significant drop in price). This is often a preparatory phase before a significant price move.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>**Context Matters**: It's crucial to interpret this pattern within the broader market context, including the trend preceding the pattern, other technical indicators, and market news or events. The significance of the pattern can vary depending on whether it occurs in a bullish, bearish, or sideways market.</blockquote><p class="leading-8 mt-7">We can see that the 7 billion parameter model gives a competitive answer to the over 1 trillion parameter model at a fraction of the size and cost!<p class="leading-8 mt-7">Here is a more advanced technical analysis question:<p class="leading-8 mt-7"><strong>How does the formation of a golden cross, identified by the short-term moving average crossing above the long-term moving average, alongside an increase in trading volume, influence your expectation for a stock's future price movement and what adjustments would you make to your portfolio in response to this signal?</strong><p class="leading-8 mt-7">Vanilla Mistral 7B:<blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>The formation of a golden cross is considered a bullish indicator as it suggests that the short-term moving average has crossed above the long-term moving average, indicating an upward trend. An increase in trading volume typically reinforces this signal, implying strong investor interest and confidence in the stock's future performance.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>In response to this golden cross signal, I would expect a positive outlook for the stock's price movement as it indicates that the overall market sentiment is turning more optimistic about its prospects. This could lead to an increase in demand and potentially push up the stock prices over time.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>To adjust my portfolio based on this signal, I might consider:</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>1. Increasing the allocation of the particular stock in question if it aligns with my overall investment strategy and risk tolerance. By doing so, I would be taking advantage of the potential upward trend indicated by the golden cross formation.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>2. Monitoring the stock closely to identify any further price movements or changes in trading volume that could provide additional insights into its future performance. This may involve setting up alerts for specific price levels and technical indicators.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>3. Diversifying my portfolio across different stocks, sectors, and asset classes to minimize risk exposure and maximize returns. By doing so, I can take advantage of potential gains from the golden cross signal while also protecting against unforeseen market events or individual stock underperformance.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>4. Regularly reviewing and rebalancing my portfolio based on changes in the overall market environment, as well as new signals generated by technical analysis tools like the golden cross formation. This will help me stay adaptive to changing market conditions and make informed decisions about adjustments to my investment strategy.</blockquote><p class="leading-8 mt-7">Guru Mistral 7B:<blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>The formation of a golden cross, where a short-term moving average crosses above a long-term moving average and is accompanied by an increase in trading volume, is a bullish signal for a stock. This indicates that the stock is gaining momentum and is likely to continue moving higher. As an investor, I would expect the stock's price to continue appreciating in the near future.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>In response to this signal, I would consider the following adjustments to my portfolio:</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>1. Buy additional shares of the stock: <strong>If the golden cross is accompanied by strong fundamentals and a healthy balance sheet</strong>, I would consider buying more shares of the stock to capitalize on the momentum and potential appreciation.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>2. Consider buying call options: If the stock is experiencing a significant increase in price, I might consider buying call options to take advantage of the potential for further appreciation.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>3. Diversify the portfolio: If the stock is experiencing a significant increase in price, I would consider diversifying the portfolio by adding stocks with different characteristics to reduce the overall risk.</blockquote><blockquote class="mt-7 text-2xl ml-5 text-gray-600 dark:text-gray-300"><p>4. Review the portfolio regularly: I would regularly review the portfolio to ensure that it remains aligned with my investment objectives and risk tolerance. If the market conditions change or the stock's fundamentals deteriorate, I would be prepared to make adjustments to the portfolio.</blockquote><p class="leading-8 mt-7">In this case, both LLMs correctly interpreted the signals as bullish. The guru however recommended also considering buying if the company has <strong>"strong fundamentals and a healthy balance sheet" </strong>as well as <strong>buying call options </strong>(a more advanced strategy). Again, the guru shows they are more knowledgeable than their vanilla counterpart.<h3 class="font-bold font-sans break-normal text-gray-900 dark:text-gray-100 text-1xl md:text-2xl pt-12">Conclusion</h3><p class="leading-8 mt-3">It was a rollercoaster, but I learned a lot from this experience and I thank you for coming along for the ride. I am impressed with the results I was able to achieve, which have shown to be competitive with GPT-4.<p class="leading-8 mt-7">Here are some ideas I have to improve the model further:<ol class="list-decimal pl-8 mt-2"><li class=mt-3>GET MORE DATA — ie chart analyses, stock reviews, balance sheets, etc.<li class=mt-3>Finetune on a larger model (<a class=text-base style="text-decoration: underline;" rel="" title="" href="https://huggingface.co/mistralai/Mixtral-8x7B-Instruct-v0.1" target=_blank>Mixtral</a> would be interesting… but pricey)<li class=mt-3>Generate better Q&amp;A with GPT-4 instead of GPT-3.5</ol><p class="leading-8 mt-7">Want to learn how to fine-tune your own LLM? <a class=text-base style="text-decoration: underline;" rel="" title="" href="https://msamon.beehiiv.com/subscribe?utm_source=medium" target=_blank>Sign up for my newsletter</a> as I am creating an affordable course to teach you how to do just that.</p>
+<div class="flex border border-gray-300 p-2 mt-7 items-center overflow-hidden"><a rel="noopener follow" href="https://msamon.beehiiv.com/subscribe?utm_source=medium" target=_blank> <div class="flex flex-row justify-between p-2 overflow-hidden"><div class="flex flex-col justify-center p-2"><h2 class="text-black dark:text-gray-100 text-base font-bold">Subscribe | MS AI Newsletter</h2><div class="mt-2 block"><h3 class="text-grey-darker text-sm">High-quality learning tools and resources to teach you cutting-edge AI</h3></div><div class=mt-5 style=""><p class="text-grey-darker text-xs">beehiiv.com</div></div><div class="relative flex flew-row h-40 w-72"><div class="lazy absolute inset-0 bg-cover bg-center" data-bg="https://miro.medium.com/v2/resize:fit:320/0*mpBgCh5GvA9FU9Lz"></div></div></div> </a></div><p class="leading-8 mt-7">For all other inquiries, you can reach me at: <a class=text-base style="text-decoration: underline;" rel="" title="" href="https://msamon.io" target=_blank>https://msamon.io</a><p class="leading-8 mt-7">If you got this far, THANK YOU. It helps a lot when you read me for more than 30 seconds and SMASH THAT CLAP BUTTON.<p class="leading-8 mt-7"><em>Unfortunately, I cannot publicly share the model or training dataset at this time as they both contain copyright information. Thank you for your understanding!</em></p>
+        </div>
+        <div class="flex flex-wrap gap-2 mt-5">
+            <a title=Mistral target=_blank href="https://medium.com/tag/mistral"><span class="text-green-500 bg-green-100 px-2 py-1 rounded-full text-xs dark:bg-green-800 dark:text-gray-100">#mistral</span></a><a title=Llm target=_blank href="https://medium.com/tag/llm"><span class="text-green-500 bg-green-100 px-2 py-1 rounded-full text-xs dark:bg-green-800 dark:text-gray-100">#llm</span></a><a title=Finance target=_blank href="https://medium.com/tag/finance"><span class="text-green-500 bg-green-100 px-2 py-1 rounded-full text-xs dark:bg-green-800 dark:text-gray-100">#finance</span></a><a title=Gpt target=_blank href="https://medium.com/tag/gpt"><span class="text-green-500 bg-green-100 px-2 py-1 rounded-full text-xs dark:bg-green-800 dark:text-gray-100">#gpt</span></a><a title="Data Science" target=_blank href="https://medium.com/tag/data-science"><span class="text-green-500 bg-green-100 px-2 py-1 rounded-full text-xs dark:bg-green-800 dark:text-gray-100">#data-science</span></a>
+        </div>
+        <div class="container w-full md:max-w-3xl mx-auto pt-12"></div>
+    </div>
+    <style>
+.main-content {
+ letter-spacing: -0.06px;
+ font-family: source-serif-pro, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+code {
+    background-color: #e3e2e2;
+}
+pre {
+    font-size: 75%;
+    background-color: #e3e2e2;
+}
+p code, ul code, li code {
+    font-size: 75%;
+}
+    </style>
+    <script>
+document.addEventListener('DOMContentLoaded', (event) => {
+  hljs.highlightAll();
+
+  document.querySelectorAll('pre code').forEach((el) => {
+         code = el.textContent;  
+          el = el.parentElement;
+         el.innerHTML = '<button class="hljs-copy p-1 bg-gray-300 dark:bg-black">Copy</button>' + el.innerHTML; // append copy button
+        el.getElementsByClassName('hljs-copy')[0].contentCopy = code;
+         el.getElementsByClassName('hljs-copy')[0].addEventListener("click", function () {
+             this.innerText = 'Copying..';
+             if (!navigator.userAgent.toLowerCase().includes('safari')) {
+                 navigator.clipboard.writeText(this.contentCopy);
+             } else {
+                 prompt("Clipboard (Select: ⌘+a > Copy:⌘+c)", this.contentCopy);
+             }
+             this.innerText = 'Copied!';
+             button = this;
+             setTimeout(function () {
+                 button.innerText = 'Copy';
+             }, 1500)
+         });
+});
+  });
+    </script>
+    <style>
+     .hljs-copy {
+         float: right;
+         cursor: pointer;
+     }
+    </style>
+    <div id=problemModal class="modal hidden fixed inset-0 w-full h-full flex items-center justify-center overflow-y-auto z-10 bg-black bg-opacity-50">
+        <div class="modal-container w-11/12 md:max-w-xl mx-auto rounded shadow-lg max-h-screen">
+            <div class="modal-content bg-white dark:bg-gray-800 dark:text-white my-8 py-4 text-left px-6">
+                <h1 class="text-3xl font-bold">Reporting a Problem</h1>
+                <div class=mt-3>
+                    <p>Sometimes we have problems displaying some Medium posts.<br><br></p>
+                    <p>If you have a problem that some images aren't loading - try using VPN. Probably you have problem with access to Medium CDN (or fucking Cloudflare's bot detection algorithms are blocking you).</p>
+                </div>
+                <form action=# method=POST class=mt-4 id=problem-form>
+                    <div class=mb-4>
+                        <label for=problem-description class="block text-gray-700 dark:text-white font-bold mb-2">Problem Description</label>
+                        <textarea id=problem-description name=problem-description placeholder="Describe your problem here..." class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" rows=4 required=""></textarea>
+                    </div>
+                    <div>
+                        <button type=submit class="m-2 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Submit</button>
+                        <button type=button class="m-2 modal-close bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+    tailwind.config = {
+        darkMode: 'class',
+    }
+
+  function navigateToOrigin() {
+    window.location.href = window.location.origin;
+  }
+if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  // document.documentElement.classList.add('dark');
+  document.getElementById('darkIcon').classList.remove('hidden');
+  document.getElementById('lightIcon').classList.add('hidden')
+} else {
+  // document.documentElement.classList.remove('dark')
+  document.getElementById('lightIcon').classList.remove('hidden');
+  document.getElementById('darkIcon').classList.add('hidden');
+}
+
+  document.getElementById('darkModeToggle').addEventListener('click', function() {
+    
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+  document.documentElement.classList.remove('dark');
+  document.getElementById('darkIcon').classList.add('hidden');
+  document.getElementById('lightIcon').classList.remove('hidden')
+  document.documentElement.style.cssText = "--lightense-backdrop: white;";
+  localStorage.setItem("theme", "light")
+} else {
+  document.documentElement.classList.add('dark')
+  document.getElementById('lightIcon').classList.add('hidden');
+  document.getElementById('darkIcon').classList.remove('hidden');
+  document.documentElement.style.cssText = "--lightense-backdrop: black;";
+  localStorage.setItem("theme", "dark")
+}
+});
+    </script>
+    <script>
+                const openModalButton = document.getElementById('openProblemModal');
+                const closeModalButton = document.querySelector('.modal-close');
+                const modal = document.getElementById('problemModal');
+                const problemDescriptionInput = document.getElementById('problem-description');
+                const submitButton = document.querySelector('form button');
+                const body = document.body;
+
+                openModalButton.addEventListener('click', () => {
+                    body.classList.add('overflow-hidden'); // Prevent scrolling on the body
+            modal.classList.remove('hidden');
+        });
+
+        closeModalButton.addEventListener('click', () => {
+            body.classList.remove('overflow-hidden'); // Re-enable scrolling on the body
+            modal.classList.add('hidden');
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.classList.add('hidden');
+                body.classList.remove('overflow-hidden');
+            }
+        });
+
+        function navigateNoCache() {
+                window.location.href = `/render-no-cache${window.location.pathname}`;
+        }
+
+        const submitForm = async (event) => {
+            event.preventDefault();
+
+            console.log('Form submiting is started!');
+            submitButton.disabled = true;
+
+            // Get the problem description from the input field
+            const problemDescription = problemDescriptionInput.value;
+            const currentPage = window.location.href;
+
+            try {
+                // Send a POST request to the "report-problem" API endpoint
+                const response = await fetch('/report-problem', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ description: problemDescription, page: currentPage }),
+                });
+
+                if (response.ok) {
+                    // Report submitted successfully, you can add a success message or further actions here
+                    console.log('Problem report submitted successfully.');
+                    modal.classList.add('hidden'); // Close the modal
+                } else {
+                    // Handle errors, such as non-200 responses
+                    console.error('Failed to submit problem report.');
+                    submitButton.disabled = false;
+                }
+            } catch (error) {
+                // Handle network errors or other exceptions
+                console.error('An error occurred:', error);
+                submitButton.disabled = false;
+            }
+        };
+
+        document.getElementById('problem-form').onsubmit = submitForm;
+    </script>
+    <script>
+const h = document.documentElement, b = document.body;
+const st = 'scrollTop';
+const sh = 'scrollHeight';
+const progress = document.getElementById('progress');
+const header = document.getElementById('header');
+const navcontent = document.getElementById('nav-content');
+
+document.addEventListener('scroll', function () {
+  /* Refresh scroll % width */
+  const scroll = (h[st] || b[st]) / ((h[sh] || b[sh]) - h.clientHeight) * 100;
+  progress.style.setProperty('--scroll', scroll + '%');
+
+  /* Apply classes for slide in bar */
+  const shouldAddClass = window.scrollY > 10;
+});
+
+		document.getElementById('nav-toggle').onclick = function() {
+			document.getElementById("nav-content").classList.toggle("hidden");
+		}
+
+  window.addEventListener('load', function () {
+       Lightense('img:not(.no-lightense)');
+  }, false);
+    </script>
+
+
+<script>
+            var lazyLoadInstance = new LazyLoad({
+                    callback_loaded: function(element) {
+        Lightense(element);
+    }, 
+    callback_error: (img) => {
+        console.log(img);
+        if (img.hasAttribute("data-src")) {
+            if (img.attributes["data-src"].value.startsWith("https://miro.medium.com/v2/")) {
+            img.setAttribute("src", img.attributes["data-src"].value.replace("https://miro.medium.com/v2/", "https://freedium.cfd/@miro/v2/" ));
+            }
+        }
+  }
+});
+</script>
+<script>
+    function navigateToOrigin() {
+      window.location.href = window.location.origin;
+    }
+          </script>
+  <script>
+      document.addEventListener('DOMContentLoaded', () => {
+        const notificationContainer = document.querySelector('.notification-container');
+        const closeButton = document.querySelector('.close-button');
+  
+        function showNotification() {
+          if (!localStorage.getItem('showNotification-update46-block')) {
+                  notificationContainer.style.display = 'block';
+          }
+        }
+  
+        // Hide the notification
+        function hideNotification() {
+          localStorage.setItem('showNotification-update46-block', 'false');
+          notificationContainer.style.display = 'none';
+        }
+  
+        // Close button functionality
+        closeButton.addEventListener('click', () => {
+          hideNotification();
+        });
+  
+        showNotification();
+      });
+    </script>
+  </div>
