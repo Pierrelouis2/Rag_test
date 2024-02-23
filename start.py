@@ -74,8 +74,8 @@ if __name__ == "__main__":
         chatGpt(chat_model)
     else :
         # chat_model = LlamaCpp(model_path="C:/Users/TelepP/.cache/gpt4all/llama-2-7b-chat.Q2_K.gguf", n_ctx=4096)
-        chat_model = GPT4All(model="C:/Users/TelepP/.cache/gpt4all/llama-2-7b-chat.Q2_K.gguf",device="Radeon (TM) RX 480 Graphics",)
-        # chat_model =  Ollama(model="dolphin-phi")
+        # chat_model = GPT4All(model="C:/Users/TelepP/.cache/gpt4all/llama-2-7b-chat.Q2_K.gguf",device="Radeon (TM) RX 480 Graphics",)
+        chat_model =  Ollama(model="mistral:latest",device="Radeon (TM) RX 480 Graphics")
         chatGpt(chat_model)
 
     print("end")

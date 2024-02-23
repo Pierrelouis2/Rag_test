@@ -38,14 +38,14 @@ import sqlite3
 
 from gpt4all import GPT4All
 start_time = time.time()
-model = GPT4All("C:/Users/TelepP/.cache/gpt4all/llama-2-7b-chat.Q2_K.gguf",device="Radeon (TM) RX 480 Graphics")
+model = GPT4All("C:/Users/TelepP/.cache/gpt4all/mistral-7b-instruct-v0.1.Q4_0.gguf",device="Radeon (TM) RX 480 Graphics")
 # output = model.generate("what is the capital of france", max_tokens=10)
 with model.chat_session():
     while 1:
         text = input("Enter your text: ")
         if text == "exit":
             break
-        response = model.generate(prompt=text, temp=0, max_tokens=100)
+        response = model.generate(prompt=text, temp=0.5, max_tokens=100)
         print(response)
     # time_response_1 = time.time()
     # response1 = model.generate(prompt='hello', temp=0)
